@@ -70,3 +70,4 @@ with col1:
 
 # Footer
 st.write("Built with ❤️ by De La Montagne")
+st.write("Disclaimer: All rights with original owners.")
