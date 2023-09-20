@@ -3,3 +3,5 @@ numpy
 pandas
 pydeck
 streamlit
+pytube
+youtube_transcript_api
