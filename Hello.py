@@ -1,51 +1,72 @@
-# Copyright (c) Streamlit Inc. (2018-2022) Snowflake Inc. (2022)
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import streamlit as st
-from streamlit.logger import get_logger
+from pytube import YouTube
+from youtube_transcript_api import YouTubeTranscriptApi
+import time
 
-LOGGER = get_logger(__name__)
+# Set page config to wide layout
+st.set_page_config(layout="wide", initial_sidebar_state="collapsed")
 
+# Create two columns for layout
+col1, col2 = st.columns([2, 3])
 
-def run():
-    st.set_page_config(
-        page_title="Hello",
-        page_icon="👋",
-    )
+# Title and description in Column 1
+with col1:
+    st.title("AI-Oke, AI Supported Karaoke")
+    st.write("Enter a YouTube video URL to extract and display captions.")
+    
+    # Input field for the YouTube URL in Column 1
+    video_url = st.text_input("Enter YouTube Video URL:", "https://www.youtube.com/watch?v=fJ9rUzIMcZQ")
 
-    st.write("# Welcome to Streamlit! 👋")
+    # Button to trigger caption extraction in Column 1
+    if st.button("Extract Captions"):
+        # Function to extract and display captions
+        try:
+            # Get the video captions
+            video_id = video_url.split("?v=")[1]
+            captions = YouTubeTranscriptApi.get_transcript(video_id)
 
-    st.sidebar.success("Select a demo above.")
+            # Display the current time ticker at the top
+            with col1:
+                video = YouTube(video_url)
+                total_time = video.length
+                current_time = st.empty()
+                current_caption = st.empty()  # Initialize with an empty string
 
-    st.markdown(
-        """
-        Streamlit is an open-source app framework built specifically for
-        Machine Learning and Data Science projects.
-        **👈 Select a demo from the sidebar** to see some examples
-        of what Streamlit can do!
-        ### Want to learn more?
-        - Check out [streamlit.io](https://streamlit.io)
-        - Jump into our [documentation](https://docs.streamlit.io)
-        - Ask a question in our [community
-          forums](https://discuss.streamlit.io)
-        ### See more complex demos
-        - Use a neural net to [analyze the Udacity Self-driving Car Image
-          Dataset](https://github.com/streamlit/demo-self-driving)
-        - Explore a [New York City rideshare dataset](https://github.com/streamlit/demo-uber-nyc-pickups)
-    """
-    )
+            # Display the embedded video in Column 2
+            with col2:
+                st.video(video_url)
 
+            # Display captions at the correct time in Column 1
+            with col1:
+                start_time = 0
+                current_caption_index = 0
+                for caption in captions:
+                    caption_start = caption['start']
+                    caption_end = caption_start + caption['duration']
 
-if __name__ == "__main__":
-    run()
+                    # Update the current time ticker
+                    while start_time <= caption_start:
+                        current_time.text(f"Current Time: {start_time:.2f} seconds")
+                        time.sleep(1)  # Sleep for 1 second to update the time
+                        start_time += 1
+
+                    # Update the current caption text when its time comes
+                    current_caption.text(caption['text'])
+
+                    # Check if the next caption starts within 10 seconds
+                    if current_caption_index < len(captions) - 1:
+                        next_caption_start = captions[current_caption_index + 1]['start']
+                        if next_caption_start - caption_start <= 10:
+                            current_caption.text(f"Next Caption: {captions[current_caption_index + 1]['text']}")
+                        else:
+                            current_caption.text("")
+                    else:
+                        current_caption.text("")
+
+                    current_caption_index += 1
+
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
+
+# Footer
+st.write("Built with ❤️ by De La Montagne")
